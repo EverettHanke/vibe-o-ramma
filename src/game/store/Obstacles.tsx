@@ -3,6 +3,8 @@ import {
   CylinderCollider,
   RigidBody,
 } from '@react-three/rapier'
+import { Puddle } from './Puddle'
+import { PUDDLES } from './puddles'
 
 function CardboardBox({
   position,
@@ -131,10 +133,18 @@ export function Obstacles() {
       <BoxStack position={[-3, 0, 2]} />
       <BoxStack position={[3, 0, -5]} />
       <Pallet position={[3, 0, 7]} />
-      <WetFloorCone position={[-3, 0, 6.5]} />
-      <WetFloorCone position={[3.4, 0, 5.5]} />
       <CanPyramid position={[-9, 0, -1]} />
       <CanPyramid position={[9, 0, 2]} />
+
+      {/* Slippery puddles in the walking lanes — cart loses grip on these. */}
+      {PUDDLES.map((p, i) => (
+        <Puddle key={i} position={p.position} size={p.size} />
+      ))}
+
+      {/* Wet-floor cones marking the puddles. */}
+      <WetFloorCone position={[-3, 0, 0]} />
+      <WetFloorCone position={[3.4, 0, 3]} />
+      <WetFloorCone position={[1.2, 0, 6.6]} />
     </>
   )
 }

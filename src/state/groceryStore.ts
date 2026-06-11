@@ -6,9 +6,25 @@ export interface GroceryItem {
   done: boolean
 }
 
-const STORAGE_KEY = 'vibe-grocery-list-v1'
+const STORAGE_KEY = 'vibe-grocery-list-v2'
 
-const SEED_NAMES = ['Milk', 'Eggs', 'Bread', 'Apples', 'Coffee']
+/** Pool of grocery names grouped loosely by the store's aisles. */
+const GROCERY_POOL = [
+  // Produce
+  'Apples', 'Bananas', 'Carrots', 'Tomatoes', 'Lettuce', 'Avocados', 'Lemons',
+  // Pantry
+  'Pasta', 'Rice', 'Cereal', 'Beans', 'Olive Oil', 'Peanut Butter', 'Soup',
+  // Bakery
+  'Bread', 'Bagels', 'Muffins', 'Croissants', 'Donuts',
+  // Dairy & frozen
+  'Milk', 'Eggs', 'Butter', 'Cheese', 'Yogurt', 'Ice Cream',
+  // Snacks
+  'Chips', 'Cookies', 'Crackers', 'Popcorn', 'Pretzels',
+  // Household
+  'Soap', 'Napkins', 'Detergent', 'Sponges', 'Foil',
+]
+
+export const DEFAULT_LIST_SIZE = 5
 
 let items: GroceryItem[] = load()
 const listeners = new Set<() => void>()
@@ -17,13 +33,29 @@ function makeId(): string {
   return `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+/** Pick `count` unique names from the pool at random. */
+export function randomNames(count: number): string[] {
+  const pool = [...GROCERY_POOL]
+  const picked: string[] = []
+  const n = Math.min(count, pool.length)
+  for (let i = 0; i < n; i++) {
+    const idx = Math.floor(Math.random() * pool.length)
+    picked.push(pool.splice(idx, 1)[0])
+  }
+  return picked
+}
+
+function randomList(count: number): GroceryItem[] {
+  return randomNames(count).map((name) => ({ id: makeId(), name, done: false }))
+}
+
 function load(): GroceryItem[] {
-  if (typeof localStorage === 'undefined') return seed()
+  if (typeof localStorage === 'undefined') return randomList(DEFAULT_LIST_SIZE)
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return seed()
+    if (!raw) return randomList(DEFAULT_LIST_SIZE)
     const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return seed()
+    if (!Array.isArray(parsed)) return randomList(DEFAULT_LIST_SIZE)
     const valid = parsed.filter(
       (entry): entry is GroceryItem =>
         typeof entry === 'object' &&
@@ -32,14 +64,10 @@ function load(): GroceryItem[] {
         typeof (entry as GroceryItem).name === 'string' &&
         typeof (entry as GroceryItem).done === 'boolean',
     )
-    return valid.length > 0 ? valid : seed()
+    return valid.length > 0 ? valid : randomList(DEFAULT_LIST_SIZE)
   } catch {
-    return seed()
+    return randomList(DEFAULT_LIST_SIZE)
   }
-}
-
-function seed(): GroceryItem[] {
-  return SEED_NAMES.map((name) => ({ id: makeId(), name, done: false }))
 }
 
 function persist(): void {
@@ -63,6 +91,12 @@ export function subscribe(listener: () => void): () => void {
 
 export function getSnapshot(): GroceryItem[] {
   return items
+}
+
+/** Replace the whole list with a fresh random selection (used per level). */
+export function regenerateList(count: number = DEFAULT_LIST_SIZE): void {
+  items = randomList(count)
+  emit()
 }
 
 export function addItem(name: string): void {

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useCharacter } from '@/core/CharacterContext'
 import { useGroceryList } from '@/state/groceryStore'
+import { useLevel } from '@/state/levelStore'
+import { useOnPuddle } from '@/state/cartPhysicsStore'
 import { ClickToPlay } from './ClickToPlay'
 import { Crosshair } from './Crosshair'
 import { InteractPrompt } from './InteractPrompt'
@@ -10,6 +12,8 @@ import { ReceiptOverlay } from './ReceiptOverlay'
 export function HUD() {
   const character = useCharacter()
   const items = useGroceryList()
+  const level = useLevel()
+  const onPuddle = useOnPuddle()
   const [prompt, setPrompt] = useState<string | null>(null)
 
   useEffect(() => {
@@ -48,11 +52,35 @@ export function HUD() {
           textAlign: 'right',
         }}
       >
-        <div style={{ fontWeight: 600 }}>Cart</div>
+        <div style={{ fontWeight: 600, opacity: 0.85 }}>Level {level}</div>
+        <div style={{ fontWeight: 600, marginTop: 4 }}>Cart</div>
         <div style={{ fontSize: 20, fontWeight: 700, color: '#22c55e' }}>
           {doneCount} / {total}
         </div>
       </div>
+
+      {onPuddle && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '22%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '10px 22px',
+            background: 'rgba(14,165,233,0.92)',
+            color: '#fff',
+            borderRadius: 10,
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: 16,
+            fontWeight: 700,
+            pointerEvents: 'none',
+            zIndex: 10,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+          }}
+        >
+          Slippery! Cart is sliding
+        </div>
+      )}
 
       {allDone && (
         <div
@@ -101,7 +129,8 @@ export function HUD() {
         <div>Shift — Sprint</div>
         <div>E — Grab / drop item</div>
         <div>Walk into the cart to push it</div>
-        <div>Push cart to CHECKOUT to print list</div>
+        <div>Avoid puddles — they make the cart slip</div>
+        <div>Push cart to CHECKOUT to finish the trip</div>
         <div>Tab — Shopping list</div>
         <div style={{ marginTop: 8, opacity: 0.7, fontSize: 11 }}>
           Click once to capture mouse (Esc to release)

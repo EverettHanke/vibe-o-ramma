@@ -1,11 +1,19 @@
 import { CuboidCollider, RigidBody } from '@react-three/rapier'
+import type { RapierRigidBody } from '@react-three/rapier'
 import { Text } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
 import { setDone } from '@/state/groceryStore'
+import { getCartGrip, setOnPuddle } from '@/state/cartPhysicsStore'
+import { isPointOnPuddle } from './puddles'
 
 interface ShoppingCartProps {
   position?: [number, number, number]
   count?: number
 }
+
+const DRY_LINEAR_DAMPING = 0.7
+const DRY_ANGULAR_DAMPING = 1.2
 
 const METAL = '#9ca3af'
 const FRAME = '#3f3f46'
@@ -42,15 +50,49 @@ export function ShoppingCart({
   position = [2, 0, 3],
   count = 0,
 }: ShoppingCartProps) {
+  const bodyRef = useRef<RapierRigidBody>(null)
+
+  useFrame(() => {
+    const body = bodyRef.current
+    if (!body) return
+
+    const t = body.translation()
+    setOnPuddle(isPointOnPuddle(t.x, t.z))
+
+    const grip = getCartGrip()
+
+    if (grip >= 0.99) {
+      body.setLinearDamping(DRY_LINEAR_DAMPING)
+      body.setAngularDamping(DRY_ANGULAR_DAMPING)
+      return
+    }
+
+    // Low grip = ice: cut damping so the cart keeps gliding, and add a wobble
+    // proportional to current speed so it fishtails instead of steering cleanly.
+    body.setLinearDamping(DRY_LINEAR_DAMPING * grip)
+    body.setAngularDamping(DRY_ANGULAR_DAMPING * grip)
+
+    const v = body.linvel()
+    const speed = Math.hypot(v.x, v.z)
+    if (speed > 0.4) {
+      const slip = 1 - grip
+      body.applyTorqueImpulse(
+        { x: 0, y: (Math.random() - 0.5) * slip * speed * 0.25, z: 0 },
+        true,
+      )
+    }
+  })
+
   return (
     <RigidBody
+      ref={bodyRef}
       type="dynamic"
       colliders={false}
       position={position}
       userData={{ cart: true }}
       enabledRotations={[false, true, false]}
-      linearDamping={0.7}
-      angularDamping={1.2}
+      linearDamping={DRY_LINEAR_DAMPING}
+      angularDamping={DRY_ANGULAR_DAMPING}
       canSleep={false}
     >
       {/* Wheels (visual) */}

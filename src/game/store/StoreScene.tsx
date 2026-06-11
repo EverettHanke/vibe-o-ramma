@@ -1,4 +1,5 @@
 import { useGroceryList } from '@/state/groceryStore'
+import { useLevel } from '@/state/levelStore'
 import { StoreEnvironment } from './StoreEnvironment'
 import { GroceryProduct } from './GroceryProduct'
 import { ShoppingCart } from './ShoppingCart'
@@ -20,6 +21,7 @@ function cartDropPosition(order: number): [number, number, number] {
 
 export function StoreScene() {
   const items = useGroceryList()
+  const level = useLevel()
   const doneItems = items.filter((item) => item.done)
 
   let doneOrder = 0
@@ -48,8 +50,9 @@ export function StoreScene() {
         )
       })}
 
-      <ShoppingCart position={CART_POSITION} count={doneItems.length} />
-      <Checkout />
+      {/* Keyed by level so each new trip resets the cart and checkout state. */}
+      <ShoppingCart key={`cart-${level}`} position={CART_POSITION} count={doneItems.length} />
+      <Checkout key={`checkout-${level}`} />
     </>
   )
 }

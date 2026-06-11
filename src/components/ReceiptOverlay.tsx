@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useReceipt, clearReceipt, type ReceiptData } from '@/state/checkoutStore'
+import { advanceLevel } from '@/state/levelStore'
 
 function toothClipPath(teeth = 24, tooth = 7): string {
   const top: string[] = []
@@ -153,21 +154,28 @@ function ReceiptCard({ receipt }: { receipt: ReceiptData }) {
 export function ReceiptOverlay() {
   const receipt = useReceipt()
 
+  // Dismissing the receipt ends the mission and starts the next level with a
+  // fresh randomized list.
+  const finishMission = useCallback(() => {
+    clearReceipt()
+    advanceLevel()
+  }, [])
+
   useEffect(() => {
     if (!receipt) return
     document.exitPointerLock()
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') clearReceipt()
+      if (e.code === 'Escape') finishMission()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [receipt])
+  }, [receipt, finishMission])
 
   if (!receipt) return null
 
   return (
     <div
-      onClick={clearReceipt}
+      onClick={finishMission}
       style={{
         position: 'absolute',
         inset: 0,
@@ -187,7 +195,7 @@ export function ReceiptOverlay() {
         <ReceiptCard receipt={receipt} />
       </div>
       <button
-        onClick={clearReceipt}
+        onClick={finishMission}
         style={{
           marginTop: 20,
           background: '#16a34a',
@@ -201,7 +209,7 @@ export function ReceiptOverlay() {
           fontFamily: 'system-ui, sans-serif',
         }}
       >
-        Done (Esc)
+        Next trip (Esc)
       </button>
     </div>
   )
