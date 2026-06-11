@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useInputGetter } from '@/platform/input'
+import { usePlannerOpen } from '@/state/uiStore'
 import { useCharacter } from './CharacterContext'
 
 const CAPSULE_RADIUS = 0.35
@@ -19,6 +20,9 @@ export function CharacterController() {
   const character = useCharacter()
   const { world } = useRapier()
   const interactPressed = useRef(false)
+  const plannerOpen = usePlannerOpen()
+  const plannerOpenRef = useRef(plannerOpen)
+  plannerOpenRef.current = plannerOpen
 
   useEffect(() => {
     let frame = 0
@@ -47,6 +51,11 @@ export function CharacterController() {
 
     character.updateLineTrace(world, _eyePos, _lookDir)
 
+    if (plannerOpenRef.current) {
+      interactPressed.current = true
+      return
+    }
+
     const input = getInput()
     if (input.interact && !interactPressed.current) {
       character.interact()
@@ -57,8 +66,9 @@ export function CharacterController() {
   return (
     <Ecctrl
       ref={ecctrlRef}
-      position={[0, 2, 0]}
+      position={[0, 2, 6]}
       mode="CameraBasedMovement"
+      disableControl={plannerOpen}
       autoBalance={false}
       capsuleHalfHeight={CAPSULE_HALF_HEIGHT}
       capsuleRadius={CAPSULE_RADIUS}
