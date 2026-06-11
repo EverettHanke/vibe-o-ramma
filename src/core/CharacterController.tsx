@@ -41,10 +41,8 @@ export function CharacterController() {
     const body = ecctrlRef.current?.group
     if (!body) return
 
-    const pos = body.translation()
-    _eyePos.set(pos.x, pos.y + 0.6, pos.z)
-
     // Aim from camera view (includes pitch); pill stays yaw-only via ecctrl pivot.
+    state.camera.getWorldPosition(_eyePos)
     state.camera.getWorldDirection(_lookDir)
 
     character.updateLineTrace(world, _eyePos, _lookDir)
@@ -65,14 +63,21 @@ export function CharacterController() {
       capsuleHalfHeight={CAPSULE_HALF_HEIGHT}
       capsuleRadius={CAPSULE_RADIUS}
       maxVelLimit={4}
-      camInitDis={-5}
+      camCollision={false}
+      camInitDis={-0.01}
+      camMinDis={-0.01}
+      camMaxDis={-0.01}
       camInitDir={{ x: 0, y: 0 }}
       camUpLimit={1.2}
       camLowLimit={-0.8}
       camTargetPos={{ x: 0, y: 0, z: 0 }}
+      camFollowMult={1000}
+      camLerpMult={1000}
+      turnVelMultiplier={1}
+      turnSpeed={100}
       debug={false}
     >
-      <mesh ref={meshRef} castShadow userData={{ camExcludeCollision: true }}>
+      <mesh ref={meshRef} visible={false} castShadow userData={{ camExcludeCollision: true }}>
         <capsuleGeometry
           args={[CAPSULE_RADIUS, CAPSULE_HALF_HEIGHT * 2, 8, 16]}
         />
