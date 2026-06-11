@@ -118,8 +118,8 @@ export function StoreEnvironment() {
       {AISLES.map((aisle) => (
         <Text
           key={aisle.id}
-          position={[aisle.centerX, 2.85, -9.5]}
-          rotation={[0, 0, 0]}
+          position={[-9.5, 2.85, aisle.centerZ]}
+          rotation={[0, Math.PI / 2, 0]}
           fontSize={0.38}
           color={aisle.signColor}
           anchorX="center"

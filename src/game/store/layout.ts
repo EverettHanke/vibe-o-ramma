@@ -12,8 +12,8 @@ export interface ShelfBoard {
 export interface AisleConfig {
   id: string
   label: string
-  /** Center line of the aisle (walk path). */
-  centerX: number
+  /** Center line of the aisle (walk path along X). */
+  centerZ: number
   signColor: string
 }
 
@@ -37,27 +37,28 @@ export const REGISTER_ZONE = {
   size: [8, 0.1, 2.8] as [number, number, number],
 }
 
+/** Aisles run east–west; walk paths at these Z coordinates. */
 export const AISLES: AisleConfig[] = [
-  { id: 'dairy', label: 'DAIRY', centerX: -7, signColor: '#0ea5e9' },
-  { id: 'produce', label: 'PRODUCE', centerX: 0, signColor: '#22c55e' },
-  { id: 'snacks', label: 'SNACKS', centerX: 7, signColor: '#f59e0b' },
+  { id: 'dairy', label: 'DAIRY', centerZ: -7, signColor: '#0ea5e9' },
+  { id: 'produce', label: 'PRODUCE', centerZ: 0, signColor: '#22c55e' },
+  { id: 'snacks', label: 'SNACKS', centerZ: 7, signColor: '#f59e0b' },
 ]
 
-/** Shelf columns along each aisle (z positions). */
+/** Product columns along each shelf run (x positions). */
 const SHELF_COLUMNS = [-10, -6.5, -3, 0.5, 4]
 
 const SHELF_OFFSET = 1.55
-const Z_BACK = -11.5
-const Z_FRONT = 5.5
+const X_BACK = -11.5
+const X_FRONT = 5.5
 
 export const PUDDLES: PuddlePlacement[] = [
-  { id: 'puddle-a1', position: [-7, 0.02, -4], size: [2.2, 2.8] },
-  { id: 'puddle-a2', position: [0, 0.02, -7], size: [2.4, 3] },
-  { id: 'puddle-a3', position: [7, 0.02, 1], size: [2.2, 2.6] },
+  { id: 'puddle-a1', position: [-4, 0.02, -7], size: [2.8, 2.2] },
+  { id: 'puddle-a2', position: [-7, 0.02, 0], size: [3, 2.4] },
+  { id: 'puddle-a3', position: [1, 0.02, 7], size: [2.6, 2.2] },
 ]
 
 interface ShelfRun {
-  x: number
+  z: number
   rotationY: number
   aisleId: string
 }
@@ -66,8 +67,8 @@ function shelfRuns(): ShelfRun[] {
   const runs: ShelfRun[] = []
   for (const aisle of AISLES) {
     runs.push(
-      { x: aisle.centerX - SHELF_OFFSET, rotationY: Math.PI / 2, aisleId: aisle.id },
-      { x: aisle.centerX + SHELF_OFFSET, rotationY: -Math.PI / 2, aisleId: aisle.id },
+      { z: aisle.centerZ - SHELF_OFFSET, rotationY: 0, aisleId: aisle.id },
+      { z: aisle.centerZ + SHELF_OFFSET, rotationY: Math.PI, aisleId: aisle.id },
     )
   }
   return runs
@@ -77,10 +78,10 @@ function buildSlots(): Slot[] {
   const slots: Slot[] = []
   for (const level of PRODUCT_LEVELS) {
     for (const run of shelfRuns()) {
-      for (const z of SHELF_COLUMNS) {
-        if (z < Z_BACK || z > Z_FRONT) continue
+      for (const x of SHELF_COLUMNS) {
+        if (x < X_BACK || x > X_FRONT) continue
         slots.push({
-          position: [run.x, level, z],
+          position: [x, level, run.z],
           rotation: [0, run.rotationY, 0],
         })
       }
@@ -108,13 +109,13 @@ export function slotForIndex(index: number): Slot {
 
 export function shelfBoards(): ShelfBoard[] {
   const boards: ShelfBoard[] = []
-  const spanZ = Z_FRONT - Z_BACK
+  const spanX = X_FRONT - X_BACK
 
   for (const run of shelfRuns()) {
     for (const level of PRODUCT_LEVELS) {
       boards.push({
-        position: [run.x, level - 0.22, (Z_BACK + Z_FRONT) / 2],
-        size: [SHELF_DEPTH, 0.12, spanZ],
+        position: [(X_BACK + X_FRONT) / 2, level - 0.22, run.z],
+        size: [spanX, 0.12, SHELF_DEPTH],
         rotation: [0, run.rotationY, 0],
       })
     }
@@ -123,14 +124,14 @@ export function shelfBoards(): ShelfBoard[] {
   return boards
 }
 
-/** Low dividers at the front/back of each aisle for visual structure. */
+/** End caps closing each aisle at the left/right walls. */
 export function aisleEndCaps(): ShelfBoard[] {
   const caps: ShelfBoard[] = []
   for (const aisle of AISLES) {
-    for (const z of [Z_BACK, Z_FRONT]) {
+    for (const x of [X_BACK, X_FRONT]) {
       caps.push({
-        position: [aisle.centerX, 0.5, z],
-        size: [SHELF_OFFSET * 2 + SHELF_DEPTH, 1, 0.2],
+        position: [x, 0.5, aisle.centerZ],
+        size: [0.2, 1, SHELF_OFFSET * 2 + SHELF_DEPTH],
         rotation: [0, 0, 0],
       })
     }
@@ -143,7 +144,7 @@ export function aisleFloorStripes(): {
   size: [number, number, number]
 }[] {
   return AISLES.map((aisle) => ({
-    position: [aisle.centerX, 0.01, (Z_BACK + Z_FRONT) / 2],
-    size: [2.4, 0.02, Z_FRONT - Z_BACK],
+    position: [(X_BACK + X_FRONT) / 2, 0.01, aisle.centerZ],
+    size: [X_FRONT - X_BACK, 0.02, 2.4],
   }))
 }
