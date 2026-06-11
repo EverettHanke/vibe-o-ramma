@@ -1,12 +1,19 @@
 import { Text } from '@react-three/drei'
 import { RigidBody, CuboidCollider } from '@react-three/rapier'
 import { useQuests } from '@/game/quests/QuestContext'
-import { InteractableBossDoor } from '../interactables/InteractableBossDoor'
-import { InteractableQuestScroll } from '../interactables/InteractableQuestScroll'
+import {
+  BOSS_GATE,
+  CHORES,
+  DUNGEON_WALLS,
+  ROOM_LABELS,
+  SPAWN,
+  TORCHES,
+  WALL_H,
+} from '@/game/dungeon/dungeonLayout'
+import { InteractableChore } from '../interactables/InteractableChore'
+import { InteractableGate } from '../interactables/InteractableGate'
 
-const CHAMBER = 10
-const WALL_H = 4
-const HALF = CHAMBER / 2
+const FLOOR_SIZE = 36
 
 function StoneWall({
   position,
@@ -27,27 +34,9 @@ function StoneWall({
   )
 }
 
-function Pedestal({ position }: { position: [number, number, number] }) {
-  return (
-    <RigidBody type="fixed" position={position} colliders={false}>
-      <mesh castShadow receiveShadow position={[0, 0.25, 0]}>
-        <cylinderGeometry args={[0.35, 0.4, 0.5, 8]} />
-        <meshStandardMaterial color="#57534e" roughness={0.85} />
-      </mesh>
-      <CuboidCollider args={[0.4, 0.25, 0.4]} position={[0, 0.25, 0]} />
-    </RigidBody>
-  )
-}
-
-function Torch({
-  position,
-  index,
-}: {
-  position: [number, number, number]
-  index: number
-}) {
+function Torch({ position, index }: { position: [number, number, number]; index: number }) {
   const { completedCount } = useQuests()
-  const brightened = completedCount > index
+  const brightened = completedCount > index % 3
   const intensity = brightened ? 3.2 : 2.2
 
   return (
@@ -76,41 +65,69 @@ function Torch({
   )
 }
 
-function QuestBoard() {
+function RoomLabel({
+  position,
+  title,
+  rotationY = 0,
+}: {
+  position: [number, number, number]
+  title: string
+  rotationY?: number
+}) {
   return (
-    <group position={[4.2, 2.2, 3.8]} rotation={[0, -Math.PI / 2, 0]}>
-      <mesh>
-        <boxGeometry args={[2.4, 1.2, 0.08]} />
-        <meshStandardMaterial color="#3f3f46" roughness={0.9} />
-      </mesh>
+    <group position={position} rotation={[0, rotationY, 0]}>
       <Text
-        position={[0, 0.25, 0.05]}
-        fontSize={0.14}
+        fontSize={0.22}
         color="#fbbf24"
         anchorX="center"
         anchorY="middle"
-        maxWidth={2.2}
+        outlineWidth={0.02}
+        outlineColor="#1c1917"
       >
-        MAIN QUEST
+        {title}
+      </Text>
+    </group>
+  )
+}
+
+function DutyBoard() {
+  const { completedCount, quests } = useQuests()
+
+  return (
+    <group position={[0, 2, -2.8]} rotation={[0, 0, 0]}>
+      <mesh>
+        <boxGeometry args={[2.8, 1.6, 0.08]} />
+        <meshStandardMaterial color="#3f3f46" roughness={0.9} />
+      </mesh>
+      <Text
+        position={[0, 0.45, 0.05]}
+        fontSize={0.13}
+        color="#fbbf24"
+        anchorX="center"
+        anchorY="middle"
+        maxWidth={2.5}
+      >
+        DUNGEON KEEPER DUTIES
       </Text>
       <Text
-        position={[0, -0.05, 0.05]}
-        fontSize={0.11}
+        position={[0, 0.05, 0.05]}
+        fontSize={0.1}
         color="#e5e7eb"
         anchorX="center"
         anchorY="middle"
-        maxWidth={2.2}
+        maxWidth={2.5}
       >
-        Be a functional person
+        {completedCount}/{quests.length} chores done today
       </Text>
       <Text
-        position={[-0.85, -0.35, 0.05]}
-        fontSize={0.16}
-        color="#6b7280"
+        position={[0, -0.35, 0.05]}
+        fontSize={0.09}
+        color="#9ca3af"
         anchorX="center"
         anchorY="middle"
+        maxWidth={2.5}
       >
-        ☐
+        The dungeon won't maintain itself. Probably.
       </Text>
     </group>
   )
@@ -123,50 +140,54 @@ export function SideQuestDungeon() {
     <>
       <RigidBody type="fixed" position={[0, -0.25, 0]} colliders={false}>
         <mesh receiveShadow>
-          <boxGeometry args={[CHAMBER, 0.5, CHAMBER]} />
+          <boxGeometry args={[FLOOR_SIZE, 0.5, FLOOR_SIZE]} />
           <meshStandardMaterial color="#374151" roughness={0.95} />
         </mesh>
-        <CuboidCollider args={[HALF, 0.25, HALF]} />
+        <CuboidCollider args={[FLOOR_SIZE / 2, 0.25, FLOOR_SIZE / 2]} />
       </RigidBody>
-
-      <StoneWall position={[0, WALL_H / 2, -HALF]} size={[CHAMBER, WALL_H, 0.4]} />
-      <StoneWall position={[0, WALL_H / 2, HALF]} size={[CHAMBER, WALL_H, 0.4]} />
-      <StoneWall position={[-HALF, WALL_H / 2, 0]} size={[0.4, WALL_H, CHAMBER]} />
-      <StoneWall position={[HALF, WALL_H / 2, 0]} size={[0.4, WALL_H, CHAMBER]} />
 
       <RigidBody type="fixed" position={[0, WALL_H + 0.1, 0]} colliders={false}>
         <mesh receiveShadow>
-          <boxGeometry args={[CHAMBER, 0.2, CHAMBER]} />
+          <boxGeometry args={[FLOOR_SIZE, 0.2, FLOOR_SIZE]} />
           <meshStandardMaterial color="#374151" roughness={0.95} />
         </mesh>
-        <CuboidCollider args={[HALF, 0.1, HALF]} />
+        <CuboidCollider args={[FLOOR_SIZE / 2, 0.1, FLOOR_SIZE / 2]} />
       </RigidBody>
 
-      {quests.map((quest) => (
-        <group key={quest.id}>
-          <Pedestal
-            position={[
-              quest.worldPosition[0],
-              0,
-              quest.worldPosition[2],
-            ]}
-          />
-          <InteractableQuestScroll
-            questId={quest.id}
-            epicTitle={quest.epicTitle}
-            emissiveColor={quest.emissiveColor}
-            scale={quest.scale}
-            position={quest.worldPosition}
-          />
-        </group>
+      {DUNGEON_WALLS.map((wall, i) => (
+        <StoneWall key={i} position={wall.position} size={wall.size} />
       ))}
 
-      <Torch position={[-4.5, 1.5, -1]} index={0} />
-      <Torch position={[4.5, 1.5, -1]} index={1} />
-      <Torch position={[-4.5, 1.5, 2]} index={2} />
+      <InteractableGate
+        position={BOSS_GATE.position}
+        size={BOSS_GATE.size}
+        requires={['sweep-bones', 'count-coins']}
+      />
 
-      <QuestBoard />
-      <InteractableBossDoor />
+      {CHORES.map(({ questId, position }) => {
+        const quest = quests.find((q) => q.id === questId)
+        if (!quest) return null
+        return (
+          <InteractableChore
+            key={questId}
+            questId={questId}
+            kind={quest.kind}
+            position={position}
+          />
+        )
+      })}
+
+      {TORCHES.map((pos, i) => (
+        <Torch key={i} position={pos} index={i} />
+      ))}
+
+      {ROOM_LABELS.map((label) => (
+        <RoomLabel key={label.title} {...label} />
+      ))}
+
+      <DutyBoard />
     </>
   )
 }
+
+export { SPAWN as DUNGEON_SPAWN }

@@ -7,7 +7,7 @@ import { InteractPrompt } from './InteractPrompt'
 
 export function HUD() {
   const character = useCharacter()
-  const { quests, completedCount, lastQuip, bossDoorOpened } = useQuests()
+  const { quests, completedCount, allComplete, lastQuip } = useQuests()
   const [prompt, setPrompt] = useState<string | null>(null)
 
   useEffect(() => {
@@ -50,13 +50,13 @@ export function HUD() {
             letterSpacing: '0.04em',
           }}
         >
-          Quest Log
+          Dungeon Keeper&apos;s Log
         </div>
         <div style={{ opacity: 0.85, marginBottom: 10 }}>
-          Adventurer Level: Barely Functional
+          Rank: Junior Custodian
         </div>
         <div style={{ marginBottom: 8, color: '#fcd34d' }}>
-          Side Quests: {completedCount}/{quests.length}
+          Shift duties: {completedCount}/{quests.length}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -106,16 +106,17 @@ export function HUD() {
           </div>
         )}
 
-        {bossDoorOpened && (
+        {allComplete && (
           <div
             style={{
               marginTop: 8,
               fontSize: 11,
-              opacity: 0.6,
+              opacity: 0.75,
               fontFamily: 'system-ui, sans-serif',
+              color: '#86efac',
             }}
           >
-            Main quest still unchecked, by the way.
+            Shift complete. The dungeon will mess itself up again by morning.
           </div>
         )}
       </div>

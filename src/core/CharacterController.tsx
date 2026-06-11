@@ -3,6 +3,7 @@ import { useRapier } from '@react-three/rapier'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { DUNGEON_SPAWN } from '@/game/DemoScene'
 import { useInputGetter } from '@/platform/input'
 import { useCharacter } from './CharacterContext'
 
@@ -57,7 +58,7 @@ export function CharacterController() {
   return (
     <Ecctrl
       ref={ecctrlRef}
-      position={[0, 2, 3.5]}
+      position={DUNGEON_SPAWN}
       mode="CameraBasedMovement"
       autoBalance={false}
       capsuleHalfHeight={CAPSULE_HALF_HEIGHT}

@@ -18,7 +18,7 @@ export function SceneLighting() {
         shadow-camera-top={10}
         shadow-camera-bottom={-10}
       />
-      <fog attach="fog" args={['#292524', 14, 40]} />
+      <fog attach="fog" args={['#292524', 18, 55]} />
     </>
   )
 }

@@ -7,59 +7,69 @@ import {
   type ReactNode,
 } from 'react'
 
+export type ChoreKind = 'bones' | 'coins' | 'boss'
+
 export interface QuestItem {
   id: string
   epicTitle: string
   mundaneSubtitle: string
+  kind: ChoreKind
   completed: boolean
   worldPosition: [number, number, number]
-  emissiveColor?: string
-  scale?: number
 }
 
 const SEED_QUESTS: QuestItem[] = [
   {
-    id: 'hydra-emails',
-    epicTitle: 'SLAY THE HYDRA OF UNREAD EMAILS',
-    mundaneSubtitle: '12 messages. You started a reply in March.',
+    id: 'sweep-bones',
+    epicTitle: 'SWEEP THE BONES',
+    mundaneSubtitle: 'Adventurers never clean up after themselves.',
+    kind: 'bones',
     completed: false,
-    worldPosition: [-3, 1.4, -2],
-    emissiveColor: '#7f1d1d',
+    worldPosition: [0, 0, -12],
   },
   {
-    id: 'lost-artifact',
-    epicTitle: 'RETRIEVE THE LOST ARTIFACT',
-    mundaneSubtitle:
-      'Return the Amazon box on your porch. It has cobwebs.',
+    id: 'count-coins',
+    epicTitle: 'COUNT THE COINS',
+    mundaneSubtitle: 'Treasury audit due before the goblins wake up.',
+    kind: 'coins',
     completed: false,
-    worldPosition: [0, 1.4, -3],
+    worldPosition: [-12, 0, 0],
   },
   {
-    id: 'ancient-dragon',
-    epicTitle: 'FACE THE ANCIENT DRAGON',
-    mundaneSubtitle: 'Reply to the dentist. Tab open since 2019.',
+    id: 'feed-boss',
+    epicTitle: 'FEED THE BOSS MONSTER',
+    mundaneSubtitle: 'Third breakfast or we all hear about it.',
+    kind: 'boss',
     completed: false,
-    worldPosition: [3, 1.4, -2],
-    scale: 1.15,
-    emissiveColor: '#92400e',
+    worldPosition: [12, 0, 0],
   },
 ]
 
-const COMPLETION_QUIPS = [
-  '+0 XP — emotional growth not implemented yet',
-  'The torch flickers with faint approval.',
-  'Quest complete. The universe remains unimpressed.',
-  'Achievement unlocked: Did One Thing.',
-]
+const COMPLETION_QUIPS: Record<string, string[]> = {
+  'sweep-bones': [
+    'Bones: relocated to the bone zone.',
+    'Spotless. For now.',
+    'The skeletons appreciate your service.',
+  ],
+  'count-coins': [
+    'Treasury balanced. Lost 3 coins. Classic.',
+    'Count complete. Do not spend any.',
+    'The coins jingle in approval.',
+  ],
+  'feed-boss': [
+    'Boss fed. It belched. Shift complete.',
+    'Monster satisfied. You may leave. (You may not leave.)',
+    'Third breakfast served. Peace returns to the dungeon.',
+  ],
+}
 
 interface QuestContextValue {
   quests: QuestItem[]
   completedCount: number
   allComplete: boolean
   lastQuip: string | null
-  bossDoorOpened: boolean
   completeQuest: (id: string) => void
-  openBossDoor: () => void
+  canStartChore: (id: string) => boolean
 }
 
 const QuestContext = createContext<QuestContextValue | null>(null)
@@ -67,23 +77,26 @@ const QuestContext = createContext<QuestContextValue | null>(null)
 export function QuestProvider({ children }: { children: ReactNode }) {
   const [quests, setQuests] = useState<QuestItem[]>(SEED_QUESTS)
   const [lastQuip, setLastQuip] = useState<string | null>(null)
-  const [bossDoorOpened, setBossDoorOpened] = useState(false)
 
   const completedCount = quests.filter((q) => q.completed).length
   const allComplete = completedCount === quests.length
+
+  const canStartChore = useCallback(
+    (id: string) => {
+      if (id !== 'feed-boss') return true
+      return quests
+        .filter((q) => q.id !== 'feed-boss')
+        .every((q) => q.completed)
+    },
+    [quests],
+  )
 
   const completeQuest = useCallback((id: string) => {
     setQuests((prev) =>
       prev.map((q) => (q.id === id ? { ...q, completed: true } : q)),
     )
-    setLastQuip(
-      COMPLETION_QUIPS[Math.floor(Math.random() * COMPLETION_QUIPS.length)],
-    )
-  }, [])
-
-  const openBossDoor = useCallback(() => {
-    setBossDoorOpened(true)
-    setLastQuip('Congratulations. New daily quests available.')
+    const quips = COMPLETION_QUIPS[id] ?? ['Chore complete.']
+    setLastQuip(quips[Math.floor(Math.random() * quips.length)])
   }, [])
 
   const value = useMemo(
@@ -92,19 +105,10 @@ export function QuestProvider({ children }: { children: ReactNode }) {
       completedCount,
       allComplete,
       lastQuip,
-      bossDoorOpened,
       completeQuest,
-      openBossDoor,
+      canStartChore,
     }),
-    [
-      quests,
-      completedCount,
-      allComplete,
-      lastQuip,
-      bossDoorOpened,
-      completeQuest,
-      openBossDoor,
-    ],
+    [quests, completedCount, allComplete, lastQuip, completeQuest, canStartChore],
   )
 
   return (
