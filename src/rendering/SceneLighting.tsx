@@ -1,19 +1,20 @@
 export function SceneLighting() {
   return (
     <>
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.15} color="#4c1d95" />
       <directionalLight
-        position={[10, 20, 10]}
-        intensity={1.2}
+        position={[0, 8, 4]}
+        intensity={0.25}
+        color="#c4b5fd"
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={50}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
+        shadow-camera-far={30}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
       />
-      <fog attach="fog" args={['#87ceeb', 30, 80]} />
+      <fog attach="fog" args={['#1c1917', 8, 22]} />
     </>
   )
 }

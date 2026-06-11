@@ -57,7 +57,7 @@ export function CharacterController() {
   return (
     <Ecctrl
       ref={ecctrlRef}
-      position={[0, 2, 0]}
+      position={[0, 2, 3.5]}
       mode="CameraBasedMovement"
       autoBalance={false}
       capsuleHalfHeight={CAPSULE_HALF_HEIGHT}
