@@ -1,112 +1,106 @@
 import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import { Text } from '@react-three/drei'
-import { Ground } from '@/physics/colliders'
-import { shelfBoards, BACK_WALL_Z, SIDE_WALL_X } from './layout'
+import { useMemo } from 'react'
+import { tiledFloorTexture } from '@/utils/textures'
+import { StoreFixtures } from './StoreFixtures'
+import { Obstacles } from './Obstacles'
+import { ROOM_HALF } from './layout'
 
-const WALL_HEIGHT = 4
+const WALL_HEIGHT = 5
 const WALL_THICKNESS = 0.4
-const ROOM_HALF = 9.2
+const CEILING_Y = 5
 
-interface WallProps {
+function Wall({
+  position,
+  size,
+}: {
   position: [number, number, number]
   size: [number, number, number]
-}
-
-function Wall({ position, size }: WallProps) {
+}) {
   const [w, h, d] = size
   return (
     <RigidBody type="fixed" colliders={false} position={position}>
-      <mesh receiveShadow castShadow>
+      <mesh receiveShadow>
         <boxGeometry args={size} />
-        <meshStandardMaterial color="#e7e5e4" />
+        <meshStandardMaterial color="#f1f5f9" />
       </mesh>
       <CuboidCollider args={[w / 2, h / 2, d / 2]} />
     </RigidBody>
   )
 }
 
-function ShelfBoards() {
-  const boards = shelfBoards()
+function CeilingLight({ position }: { position: [number, number, number] }) {
   return (
-    <>
-      {boards.map((board, i) => (
-        <RigidBody
-          key={i}
-          type="fixed"
-          colliders={false}
-          position={board.position}
-          rotation={board.rotation}
-        >
-          <mesh receiveShadow castShadow>
-            <boxGeometry args={board.size} />
-            <meshStandardMaterial color="#a8a29e" />
-          </mesh>
-          <CuboidCollider
-            args={[board.size[0] / 2, board.size[1] / 2, board.size[2] / 2]}
-          />
-        </RigidBody>
-      ))}
-    </>
+    <mesh position={position} rotation={[Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[0.6, 4]} />
+      <meshStandardMaterial
+        color="#ffffff"
+        emissive="#fefce8"
+        emissiveIntensity={1.4}
+      />
+    </mesh>
+  )
+}
+
+function Floor() {
+  const tex = useMemo(() => tiledFloorTexture(20), [])
+  return (
+    <RigidBody type="fixed" colliders={false}>
+      <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[ROOM_HALF * 2, ROOM_HALF * 2]} />
+        <meshStandardMaterial map={tex} color="#ffffff" roughness={0.5} />
+      </mesh>
+      <CuboidCollider
+        args={[ROOM_HALF, 0.25, ROOM_HALF]}
+        position={[0, -0.25, 0]}
+        friction={0.9}
+      />
+    </RigidBody>
   )
 }
 
 export function StoreEnvironment() {
   const wy = WALL_HEIGHT / 2
+  const lightRows = [-8, -4, 0, 4, 8]
+  const lightCols = [-8, 0, 8]
 
   return (
     <>
-      <Ground size={[40, 0.5, 40]} color="#d6d3d1" />
+      <Floor />
 
-      {/* Perimeter walls */}
-      <Wall
-        position={[0, wy, -ROOM_HALF]}
-        size={[ROOM_HALF * 2, WALL_HEIGHT, WALL_THICKNESS]}
-      />
-      <Wall
-        position={[0, wy, ROOM_HALF]}
-        size={[ROOM_HALF * 2, WALL_HEIGHT, WALL_THICKNESS]}
-      />
-      <Wall
-        position={[-ROOM_HALF, wy, 0]}
-        size={[WALL_THICKNESS, WALL_HEIGHT, ROOM_HALF * 2]}
-      />
-      <Wall
-        position={[ROOM_HALF, wy, 0]}
-        size={[WALL_THICKNESS, WALL_HEIGHT, ROOM_HALF * 2]}
-      />
+      {/* Walls */}
+      <Wall position={[0, wy, -ROOM_HALF]} size={[ROOM_HALF * 2, WALL_HEIGHT, WALL_THICKNESS]} />
+      <Wall position={[0, wy, ROOM_HALF]} size={[ROOM_HALF * 2, WALL_HEIGHT, WALL_THICKNESS]} />
+      <Wall position={[-ROOM_HALF, wy, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, ROOM_HALF * 2]} />
+      <Wall position={[ROOM_HALF, wy, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, ROOM_HALF * 2]} />
 
-      <ShelfBoards />
+      {/* Ceiling */}
+      <mesh position={[0, CEILING_Y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[ROOM_HALF * 2, ROOM_HALF * 2]} />
+        <meshStandardMaterial color="#e2e8f0" side={2} />
+      </mesh>
+      {lightRows.map((z) =>
+        lightCols.map((x) => (
+          <CeilingLight key={`${x}-${z}`} position={[x, CEILING_Y - 0.05, z]} />
+        )),
+      )}
 
-      {/* Aisle signs */}
+      {/* Entrance banner */}
       <Text
-        position={[0, 3.1, BACK_WALL_Z + 0.5]}
-        fontSize={0.6}
+        position={[0, 4, ROOM_HALF - 0.3]}
+        rotation={[0, Math.PI, 0]}
+        fontSize={0.9}
         color="#16a34a"
         anchorX="center"
         anchorY="middle"
+        outlineWidth={0.02}
+        outlineColor="#ffffff"
       >
-        FRESH MARKET
+        FRESH MART
       </Text>
-      <Text
-        position={[-SIDE_WALL_X + 0.5, 3.1, 0]}
-        rotation={[0, Math.PI / 2, 0]}
-        fontSize={0.5}
-        color="#0ea5e9"
-        anchorX="center"
-        anchorY="middle"
-      >
-        AISLE 2
-      </Text>
-      <Text
-        position={[SIDE_WALL_X - 0.5, 3.1, 0]}
-        rotation={[0, -Math.PI / 2, 0]}
-        fontSize={0.5}
-        color="#f59e0b"
-        anchorX="center"
-        anchorY="middle"
-      >
-        AISLE 3
-      </Text>
+
+      <StoreFixtures />
+      <Obstacles />
     </>
   )
 }

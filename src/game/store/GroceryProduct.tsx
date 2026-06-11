@@ -1,4 +1,9 @@
-import { CuboidCollider, RigidBody } from '@react-three/rapier'
+import {
+  BallCollider,
+  CuboidCollider,
+  CylinderCollider,
+  RigidBody,
+} from '@react-three/rapier'
 import type { RapierCollider, RapierRigidBody } from '@react-three/rapier'
 import { Billboard, Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
@@ -16,9 +21,9 @@ interface GroceryProductProps {
 }
 
 const HOLD_DISTANCE = 1.5
-const HOLD_DROP = 0.35
-const CARRY_STIFFNESS = 12
-const MAX_CARRY_SPEED = 14
+const HOLD_DROP = 0.3
+const CARRY_STIFFNESS = 9
+const MAX_CARRY_SPEED = 13
 
 const PALETTE = [
   '#ef4444',
@@ -31,12 +36,35 @@ const PALETTE = [
   '#eab308',
 ]
 
-function colorFor(key: string): string {
-  let hash = 0
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) | 0
+type Shape = 'box' | 'carton' | 'can' | 'bottle' | 'fruit'
+const SHAPES: Shape[] = ['box', 'carton', 'can', 'bottle', 'fruit']
+
+function hash(key: string): number {
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+interface ShapeConfig {
+  shape: Shape
+  density: number
+  labelY: number
+}
+
+function shapeFor(key: string): ShapeConfig {
+  const shape = SHAPES[hash(key) % SHAPES.length]
+  switch (shape) {
+    case 'carton':
+      return { shape, density: 0.7, labelY: 0.5 }
+    case 'can':
+      return { shape, density: 1.4, labelY: 0.4 }
+    case 'bottle':
+      return { shape, density: 1.0, labelY: 0.55 }
+    case 'fruit':
+      return { shape, density: 0.6, labelY: 0.36 }
+    default:
+      return { shape, density: 0.8, labelY: 0.42 }
   }
-  return PALETTE[Math.abs(hash) % PALETTE.length]
 }
 
 const _camPos = new THREE.Vector3()
@@ -46,11 +74,10 @@ const _target = new THREE.Vector3()
 export function GroceryProduct({ id, name, position }: GroceryProductProps) {
   const bodyRef = useRef<RapierRigidBody>(null)
   const colliderRef = useRef<RapierCollider>(null)
-  const color = useMemo(() => colorFor(id + name), [id, name])
+  const color = useMemo(() => PALETTE[hash(id + name) % PALETTE.length], [id, name])
+  const cfg = useMemo(() => shapeFor(id + name), [id, name])
   const grabbedId = useGrabbedId()
   const isGrabbed = grabbedId === id
-  // Freeze the spawn position; after mount the physics body owns its transform,
-  // so toggling done (which changes the passed position) must not teleport it.
   const spawnPosition = useRef(position).current
 
   const interactable = useMemo<IInteractable>(
@@ -89,9 +116,20 @@ export function GroceryProduct({ id, name, position }: GroceryProductProps) {
       vz *= scale
     }
 
+    // Pull toward the hold point but leave rotation free so the item swings
+    // and tumbles in hand for a physical feel.
     body.setLinvel({ x: vx, y: vy, z: vz }, true)
-    body.setAngvel({ x: 0, y: 0, z: 0 }, true)
   })
+
+  const emissive = isGrabbed ? 0.5 : 0.12
+  const material = (
+    <meshStandardMaterial
+      color={color}
+      emissive={color}
+      emissiveIntensity={emissive}
+      roughness={0.6}
+    />
+  )
 
   return (
     <RigidBody
@@ -100,22 +138,63 @@ export function GroceryProduct({ id, name, position }: GroceryProductProps) {
       colliders={false}
       position={spawnPosition}
       userData={{ itemId: id }}
-      linearDamping={0.4}
-      angularDamping={0.8}
+      linearDamping={0.3}
+      angularDamping={0.6}
       canSleep={false}
     >
-      <mesh castShadow>
-        <boxGeometry args={[0.4, 0.4, 0.4]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={isGrabbed ? 0.5 : 0.15}
-        />
-      </mesh>
-      <CuboidCollider ref={colliderRef} args={[0.2, 0.2, 0.2]} density={0.8} />
-      <Billboard position={[0, 0.42, 0]}>
+      {cfg.shape === 'box' && (
+        <>
+          <mesh castShadow>
+            <boxGeometry args={[0.4, 0.4, 0.4]} />
+            {material}
+          </mesh>
+          <CuboidCollider ref={colliderRef} args={[0.2, 0.2, 0.2]} density={cfg.density} />
+        </>
+      )}
+      {cfg.shape === 'carton' && (
+        <>
+          <mesh castShadow>
+            <boxGeometry args={[0.32, 0.52, 0.18]} />
+            {material}
+          </mesh>
+          <CuboidCollider ref={colliderRef} args={[0.16, 0.26, 0.09]} density={cfg.density} />
+        </>
+      )}
+      {cfg.shape === 'can' && (
+        <>
+          <mesh castShadow>
+            <cylinderGeometry args={[0.16, 0.16, 0.34, 18]} />
+            {material}
+          </mesh>
+          <CylinderCollider ref={colliderRef} args={[0.17, 0.16]} density={cfg.density} />
+        </>
+      )}
+      {cfg.shape === 'bottle' && (
+        <>
+          <mesh castShadow>
+            <cylinderGeometry args={[0.11, 0.13, 0.5, 18]} />
+            {material}
+          </mesh>
+          <mesh castShadow position={[0, 0.32, 0]}>
+            <cylinderGeometry args={[0.05, 0.09, 0.16, 12]} />
+            {material}
+          </mesh>
+          <CylinderCollider ref={colliderRef} args={[0.25, 0.13]} density={cfg.density} />
+        </>
+      )}
+      {cfg.shape === 'fruit' && (
+        <>
+          <mesh castShadow>
+            <sphereGeometry args={[0.22, 20, 20]} />
+            {material}
+          </mesh>
+          <BallCollider ref={colliderRef} args={[0.22]} density={cfg.density} />
+        </>
+      )}
+
+      <Billboard position={[0, cfg.labelY, 0]}>
         <Text
-          fontSize={0.16}
+          fontSize={0.15}
           maxWidth={1.4}
           color="#1c1917"
           anchorX="center"

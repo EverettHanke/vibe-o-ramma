@@ -47,6 +47,7 @@ export function ShoppingCart({
       type="dynamic"
       colliders={false}
       position={position}
+      userData={{ cart: true }}
       enabledRotations={[false, true, false]}
       linearDamping={0.7}
       angularDamping={1.2}

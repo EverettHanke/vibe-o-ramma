@@ -2,6 +2,7 @@ import { useGroceryList } from '@/state/groceryStore'
 import { StoreEnvironment } from './StoreEnvironment'
 import { GroceryProduct } from './GroceryProduct'
 import { ShoppingCart } from './ShoppingCart'
+import { Checkout } from './Checkout'
 import { slotForIndex } from './layout'
 
 const CART_POSITION: [number, number, number] = [2, 0, 3]
@@ -48,6 +49,7 @@ export function StoreScene() {
       })}
 
       <ShoppingCart position={CART_POSITION} count={doneItems.length} />
+      <Checkout />
     </>
   )
 }

@@ -5,6 +5,7 @@ import { ClickToPlay } from './ClickToPlay'
 import { Crosshair } from './Crosshair'
 import { InteractPrompt } from './InteractPrompt'
 import { PlannerPanel } from './PlannerPanel'
+import { ReceiptOverlay } from './ReceiptOverlay'
 
 export function HUD() {
   const character = useCharacter()
@@ -28,6 +29,7 @@ export function HUD() {
       <Crosshair />
       <InteractPrompt text={prompt} />
       <PlannerPanel />
+      <ReceiptOverlay />
 
       {/* Cart progress */}
       <div
@@ -99,6 +101,7 @@ export function HUD() {
         <div>Shift — Sprint</div>
         <div>E — Grab / drop item</div>
         <div>Walk into the cart to push it</div>
+        <div>Push cart to CHECKOUT to print list</div>
         <div>Tab — Shopping list</div>
         <div style={{ marginTop: 8, opacity: 0.7, fontSize: 11 }}>
           Click once to capture mouse (Esc to release)

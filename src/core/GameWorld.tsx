@@ -28,7 +28,7 @@ export function GameWorld({ children }: GameWorldProps) {
       camera={{ position: [0, 2.7, 0], fov: 60, near: 0.1, far: 200 }}
       style={{ width: '100%', height: '100%' }}
       onCreated={({ gl }) => {
-        gl.setClearColor('#87ceeb')
+        gl.setClearColor('#dbe4ec')
       }}
     >
       <Suspense fallback={null}>
