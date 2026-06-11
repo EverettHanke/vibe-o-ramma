@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCharacter } from '@/core/CharacterContext'
 import { useQuests } from '@/game/quests/QuestContext'
+import { useLayout } from '@/game/dungeon/LayoutContext'
 import { ClickToPlay } from './ClickToPlay'
 import { Crosshair } from './Crosshair'
 import { InteractPrompt } from './InteractPrompt'
@@ -8,6 +9,7 @@ import { InteractPrompt } from './InteractPrompt'
 export function HUD() {
   const character = useCharacter()
   const { quests, completedCount, allComplete, lastQuip } = useQuests()
+  const { editorOpen, toggleEditor } = useLayout()
   const [prompt, setPrompt] = useState<string | null>(null)
 
   useEffect(() => {
@@ -19,10 +21,11 @@ export function HUD() {
 
   return (
     <>
-      <ClickToPlay />
-      <Crosshair />
-      <InteractPrompt text={prompt} />
+      {!editorOpen && <ClickToPlay />}
+      {!editorOpen && <Crosshair />}
+      {!editorOpen && <InteractPrompt text={prompt} />}
 
+      {!editorOpen && (
       <div
         style={{
           position: 'absolute',
@@ -120,7 +123,31 @@ export function HUD() {
           </div>
         )}
       </div>
+      )}
 
+      <button
+        type="button"
+        onClick={toggleEditor}
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          padding: '10px 14px',
+          background: editorOpen ? '#78350f' : 'rgba(20, 12, 8, 0.82)',
+          color: '#fbbf24',
+          border: '1px solid rgba(251, 191, 36, 0.35)',
+          borderRadius: 8,
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: 'pointer',
+          zIndex: 40,
+        }}
+      >
+        {editorOpen ? 'Play (L)' : 'Level Editor (L)'}
+      </button>
+
+      {!editorOpen && (
       <div
         style={{
           position: 'absolute',
@@ -137,8 +164,9 @@ export function HUD() {
           zIndex: 10,
         }}
       >
-        <div>WASD · Mouse · Space · Shift · E</div>
+        <div>WASD · Mouse · Space · Shift · E · L editor</div>
       </div>
+      )}
     </>
   )
 }

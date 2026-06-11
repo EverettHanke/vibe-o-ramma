@@ -3,7 +3,7 @@ import { useRapier } from '@react-three/rapier'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { DUNGEON_SPAWN } from '@/game/DemoScene'
+import { useLayout } from '@/game/dungeon/LayoutContext'
 import { useInputGetter } from '@/platform/input'
 import { useCharacter } from './CharacterContext'
 
@@ -19,7 +19,9 @@ export function CharacterController() {
   const getInput = useInputGetter()
   const character = useCharacter()
   const { world } = useRapier()
+  const { derived, editorOpen } = useLayout()
   const interactPressed = useRef(false)
+  const spawnKey = derived.spawn.join(',')
 
   useEffect(() => {
     let frame = 0
@@ -39,10 +41,11 @@ export function CharacterController() {
   }, [character])
 
   useFrame((state) => {
+    if (editorOpen) return
+
     const body = ecctrlRef.current?.group
     if (!body) return
 
-    // Aim from camera view (includes pitch); pill stays yaw-only via ecctrl pivot.
     state.camera.getWorldPosition(_eyePos)
     state.camera.getWorldDirection(_lookDir)
 
@@ -57,8 +60,10 @@ export function CharacterController() {
 
   return (
     <Ecctrl
+      key={spawnKey}
       ref={ecctrlRef}
-      position={DUNGEON_SPAWN}
+      position={derived.spawn}
+      disableControl={editorOpen}
       mode="CameraBasedMovement"
       autoBalance={false}
       capsuleHalfHeight={CAPSULE_HALF_HEIGHT}
