@@ -3,78 +3,86 @@ export interface Slot {
   rotation: [number, number, number]
 }
 
-/**
- * Product label/front faces the direction given by rotation.y. drei <Text>
- * and our box fronts default to facing +z, so a rotation of 0 faces +z.
- */
-interface ShelfWall {
-  /** Fixed coordinate of the wall the shelf sits against. */
-  fixed: number
-  /** Which axis the shelf runs along ('x' for back wall, 'z' for side walls). */
-  axis: 'x' | 'z'
-  /** Positions along `axis` for each column. */
-  columns: number[]
-  /** Heights for each product row. */
-  levels: number[]
-  /** Yaw so the product front faces the aisle. */
-  rotationY: number
+export interface ShelfBoard {
+  position: [number, number, number]
+  size: [number, number, number]
+  rotation: [number, number, number]
+}
+
+export interface AisleConfig {
+  id: string
+  label: string
+  /** Center line of the aisle (walk path). */
+  centerX: number
+  signColor: string
+}
+
+export interface PuddlePlacement {
+  id: string
+  position: [number, number, number]
+  size: [number, number]
 }
 
 export const PRODUCT_LEVELS = [1.0, 1.65]
-export const SHELF_DEPTH = 0.6
+export const SHELF_DEPTH = 0.55
+export const ROOM_HALF_X = 12
+export const ROOM_HALF_Z = 14
 
-const COLUMNS_BACK = [-6, -3.6, -1.2, 1.2, 3.6, 6]
-const COLUMNS_SIDE = [-6, -3.6, -1.2, 1.2, 3.6, 6]
+export const PLAYER_SPAWN: [number, number, number] = [0, 2, 9.5]
+export const CART_SPAWN: [number, number, number] = [-1.5, 0, 8.2]
 
-export const BACK_WALL_Z = -8.4
-export const SIDE_WALL_X = 8.4
+/** Checkout lane at the front of the store. */
+export const REGISTER_ZONE = {
+  position: [0, 0.05, 10.8] as [number, number, number],
+  size: [8, 0.1, 2.8] as [number, number, number],
+}
 
-const WALLS: ShelfWall[] = [
-  // Back wall: runs along x, products face +z (toward spawn).
-  {
-    fixed: BACK_WALL_Z,
-    axis: 'x',
-    columns: COLUMNS_BACK,
-    levels: PRODUCT_LEVELS,
-    rotationY: 0,
-  },
-  // Left wall: runs along z, products face +x.
-  {
-    fixed: -SIDE_WALL_X,
-    axis: 'z',
-    columns: COLUMNS_SIDE,
-    levels: PRODUCT_LEVELS,
-    rotationY: Math.PI / 2,
-  },
-  // Right wall: runs along z, products face -x.
-  {
-    fixed: SIDE_WALL_X,
-    axis: 'z',
-    columns: COLUMNS_SIDE,
-    levels: PRODUCT_LEVELS,
-    rotationY: -Math.PI / 2,
-  },
+export const AISLES: AisleConfig[] = [
+  { id: 'dairy', label: 'DAIRY', centerX: -7, signColor: '#0ea5e9' },
+  { id: 'produce', label: 'PRODUCE', centerX: 0, signColor: '#22c55e' },
+  { id: 'snacks', label: 'SNACKS', centerX: 7, signColor: '#f59e0b' },
 ]
+
+/** Shelf columns along each aisle (z positions). */
+const SHELF_COLUMNS = [-10, -6.5, -3, 0.5, 4]
+
+const SHELF_OFFSET = 1.55
+const Z_BACK = -11.5
+const Z_FRONT = 5.5
+
+export const PUDDLES: PuddlePlacement[] = [
+  { id: 'puddle-a1', position: [-7, 0.02, -4], size: [2.2, 2.8] },
+  { id: 'puddle-a2', position: [0, 0.02, -7], size: [2.4, 3] },
+  { id: 'puddle-a3', position: [7, 0.02, 1], size: [2.2, 2.6] },
+]
+
+interface ShelfRun {
+  x: number
+  rotationY: number
+  aisleId: string
+}
+
+function shelfRuns(): ShelfRun[] {
+  const runs: ShelfRun[] = []
+  for (const aisle of AISLES) {
+    runs.push(
+      { x: aisle.centerX - SHELF_OFFSET, rotationY: Math.PI / 2, aisleId: aisle.id },
+      { x: aisle.centerX + SHELF_OFFSET, rotationY: -Math.PI / 2, aisleId: aisle.id },
+    )
+  }
+  return runs
+}
 
 function buildSlots(): Slot[] {
   const slots: Slot[] = []
-  // Front-most row first so the earliest items are the most visible.
   for (const level of PRODUCT_LEVELS) {
-    for (const wall of WALLS) {
-      for (const column of wall.columns) {
-        if (wall.levels.indexOf(level) === -1) continue
-        if (wall.axis === 'x') {
-          slots.push({
-            position: [column, level, wall.fixed + SHELF_DEPTH * 0.5],
-            rotation: [0, wall.rotationY, 0],
-          })
-        } else {
-          const sign = wall.fixed < 0 ? 1 : -1
-          slots.push({
-            position: [wall.fixed + sign * SHELF_DEPTH * 0.5, level, column],
-            rotation: [0, wall.rotationY, 0],
-          })
-        }
+    for (const run of shelfRuns()) {
+      for (const z of SHELF_COLUMNS) {
+        if (z < Z_BACK || z > Z_FRONT) continue
+        slots.push({
+          position: [run.x, level, z],
+          rotation: [0, run.rotationY, 0],
+        })
       }
     }
   }
@@ -89,45 +97,53 @@ export function slotCount(): number {
 
 export function slotForIndex(index: number): Slot {
   const base = SLOTS[index % SLOTS.length]
-  // If we wrap around (more items than slots), nudge up a row so items
-  // never occupy the exact same point.
   const wrap = Math.floor(index / SLOTS.length)
   if (wrap === 0) return base
   const [x, y, z] = base.position
   return {
-    position: [x, y + wrap * 0.5, z],
+    position: [x, y + wrap * 0.45, z],
     rotation: base.rotation,
   }
 }
 
-export interface ShelfBoard {
-  position: [number, number, number]
-  size: [number, number, number]
-  rotation: [number, number, number]
-}
-
-/** Shelf board geometry, derived from the same wall config the slots use. */
 export function shelfBoards(): ShelfBoard[] {
   const boards: ShelfBoard[] = []
-  const span = 14
-  for (const wall of WALLS) {
-    for (const level of wall.levels) {
-      const boardY = level - 0.22
-      if (wall.axis === 'x') {
-        boards.push({
-          position: [0, boardY, wall.fixed + SHELF_DEPTH * 0.5],
-          size: [span, 0.12, SHELF_DEPTH],
-          rotation: [0, 0, 0],
-        })
-      } else {
-        const sign = wall.fixed < 0 ? 1 : -1
-        boards.push({
-          position: [wall.fixed + sign * SHELF_DEPTH * 0.5, boardY, 0],
-          size: [SHELF_DEPTH, 0.12, span],
-          rotation: [0, 0, 0],
-        })
-      }
+  const spanZ = Z_FRONT - Z_BACK
+
+  for (const run of shelfRuns()) {
+    for (const level of PRODUCT_LEVELS) {
+      boards.push({
+        position: [run.x, level - 0.22, (Z_BACK + Z_FRONT) / 2],
+        size: [SHELF_DEPTH, 0.12, spanZ],
+        rotation: [0, run.rotationY, 0],
+      })
     }
   }
+
   return boards
+}
+
+/** Low dividers at the front/back of each aisle for visual structure. */
+export function aisleEndCaps(): ShelfBoard[] {
+  const caps: ShelfBoard[] = []
+  for (const aisle of AISLES) {
+    for (const z of [Z_BACK, Z_FRONT]) {
+      caps.push({
+        position: [aisle.centerX, 0.5, z],
+        size: [SHELF_OFFSET * 2 + SHELF_DEPTH, 1, 0.2],
+        rotation: [0, 0, 0],
+      })
+    }
+  }
+  return caps
+}
+
+export function aisleFloorStripes(): {
+  position: [number, number, number]
+  size: [number, number, number]
+}[] {
+  return AISLES.map((aisle) => ({
+    position: [aisle.centerX, 0.01, (Z_BACK + Z_FRONT) / 2],
+    size: [2.4, 0.02, Z_FRONT - Z_BACK],
+  }))
 }

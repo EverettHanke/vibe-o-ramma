@@ -2,18 +2,21 @@ import { useGroceryList } from '@/state/groceryStore'
 import { StoreEnvironment } from './StoreEnvironment'
 import { GroceryProduct } from './GroceryProduct'
 import { ShoppingCart } from './ShoppingCart'
-import { slotForIndex } from './layout'
-
-const CART_POSITION: [number, number, number] = [2, 0, 3]
+import { CheckoutRegister } from './CheckoutRegister'
+import { Puddle } from './Puddle'
+import { CART_SPAWN, PUDDLES, slotForIndex } from './layout'
 
 /** Stagger done items above the cart so they drop in without overlapping. */
-function cartDropPosition(order: number): [number, number, number] {
+function cartDropPosition(
+  cartPos: [number, number, number],
+  order: number,
+): [number, number, number] {
   const col = order % 2
   const row = Math.floor(order / 2) % 3
   return [
-    CART_POSITION[0] - 0.18 + col * 0.36,
+    cartPos[0] - 0.18 + col * 0.36,
     1.3 + Math.floor(order / 6) * 0.45,
-    CART_POSITION[2] - 0.35 + row * 0.35,
+    cartPos[2] - 0.35 + row * 0.35,
   ]
 }
 
@@ -26,15 +29,22 @@ export function StoreScene() {
   return (
     <>
       <StoreEnvironment />
+      <CheckoutRegister />
+
+      {PUDDLES.map((puddle) => (
+        <Puddle
+          key={puddle.id}
+          position={puddle.position}
+          size={puddle.size}
+        />
+      ))}
 
       {items.map((item, index) => {
         let position: [number, number, number]
         if (item.done) {
-          position = cartDropPosition(doneOrder++)
+          position = cartDropPosition(CART_SPAWN, doneOrder++)
         } else {
           const [sx, sy, sz] = slotForIndex(index).position
-          // Spawn just above the shelf board so the item settles instead of
-          // popping out of an initial overlap.
           position = [sx, sy + 0.12, sz]
         }
         return (
@@ -47,7 +57,7 @@ export function StoreScene() {
         )
       })}
 
-      <ShoppingCart position={CART_POSITION} count={doneItems.length} />
+      <ShoppingCart position={CART_SPAWN} count={doneItems.length} />
     </>
   )
 }

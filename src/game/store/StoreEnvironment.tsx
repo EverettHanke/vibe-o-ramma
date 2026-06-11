@@ -1,11 +1,17 @@
 import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import { Text } from '@react-three/drei'
 import { Ground } from '@/physics/colliders'
-import { shelfBoards, BACK_WALL_Z, SIDE_WALL_X } from './layout'
+import {
+  AISLES,
+  ROOM_HALF_X,
+  ROOM_HALF_Z,
+  aisleEndCaps,
+  aisleFloorStripes,
+  shelfBoards,
+} from './layout'
 
 const WALL_HEIGHT = 4
 const WALL_THICKNESS = 0.4
-const ROOM_HALF = 9.2
 
 interface WallProps {
   position: [number, number, number]
@@ -26,7 +32,7 @@ function Wall({ position, size }: WallProps) {
 }
 
 function ShelfBoards() {
-  const boards = shelfBoards()
+  const boards = [...shelfBoards(), ...aisleEndCaps()]
   return (
     <>
       {boards.map((board, i) => (
@@ -50,62 +56,89 @@ function ShelfBoards() {
   )
 }
 
+function AisleStripes() {
+  return (
+    <>
+      {aisleFloorStripes().map((stripe, i) => (
+        <mesh
+          key={i}
+          position={stripe.position}
+          rotation={[-Math.PI / 2, 0, 0]}
+          receiveShadow
+        >
+          <planeGeometry args={[stripe.size[0], stripe.size[2]]} />
+          <meshStandardMaterial
+            color="#fafaf9"
+            transparent
+            opacity={0.35}
+            roughness={0.95}
+          />
+        </mesh>
+      ))}
+    </>
+  )
+}
+
 export function StoreEnvironment() {
   const wy = WALL_HEIGHT / 2
+  const spanX = ROOM_HALF_X * 2
+  const spanZ = ROOM_HALF_Z * 2
 
   return (
     <>
-      <Ground size={[40, 0.5, 40]} color="#d6d3d1" />
+      <Ground size={[spanX + 4, 0.5, spanZ + 4]} color="#d6d3d1" />
 
-      {/* Perimeter walls */}
+      <Wall position={[0, wy, -ROOM_HALF_Z]} size={[spanX, WALL_HEIGHT, WALL_THICKNESS]} />
+      <Wall position={[-ROOM_HALF_X, wy, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, spanZ]} />
+      <Wall position={[ROOM_HALF_X, wy, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, spanZ]} />
+
+      {/* Front wall with entrance gap */}
       <Wall
-        position={[0, wy, -ROOM_HALF]}
-        size={[ROOM_HALF * 2, WALL_HEIGHT, WALL_THICKNESS]}
+        position={[-ROOM_HALF_X / 2 - 1, wy, ROOM_HALF_Z]}
+        size={[ROOM_HALF_X - 2, WALL_HEIGHT, WALL_THICKNESS]}
       />
       <Wall
-        position={[0, wy, ROOM_HALF]}
-        size={[ROOM_HALF * 2, WALL_HEIGHT, WALL_THICKNESS]}
-      />
-      <Wall
-        position={[-ROOM_HALF, wy, 0]}
-        size={[WALL_THICKNESS, WALL_HEIGHT, ROOM_HALF * 2]}
-      />
-      <Wall
-        position={[ROOM_HALF, wy, 0]}
-        size={[WALL_THICKNESS, WALL_HEIGHT, ROOM_HALF * 2]}
+        position={[ROOM_HALF_X / 2 + 1, wy, ROOM_HALF_Z]}
+        size={[ROOM_HALF_X - 2, WALL_HEIGHT, WALL_THICKNESS]}
       />
 
+      <AisleStripes />
       <ShelfBoards />
 
-      {/* Aisle signs */}
       <Text
-        position={[0, 3.1, BACK_WALL_Z + 0.5]}
-        fontSize={0.6}
+        position={[0, 3.4, -ROOM_HALF_Z + 1.2]}
+        fontSize={0.7}
         color="#16a34a"
         anchorX="center"
         anchorY="middle"
       >
         FRESH MARKET
       </Text>
+
+      {AISLES.map((aisle) => (
+        <Text
+          key={aisle.id}
+          position={[aisle.centerX, 2.85, -9.5]}
+          rotation={[0, 0, 0]}
+          fontSize={0.38}
+          color={aisle.signColor}
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.02}
+          outlineColor="#1c1917"
+        >
+          {aisle.label}
+        </Text>
+      ))}
+
       <Text
-        position={[-SIDE_WALL_X + 0.5, 3.1, 0]}
-        rotation={[0, Math.PI / 2, 0]}
-        fontSize={0.5}
-        color="#0ea5e9"
+        position={[0, 2.5, 7.2]}
+        fontSize={0.28}
+        color="#6b7280"
         anchorX="center"
         anchorY="middle"
       >
-        AISLE 2
-      </Text>
-      <Text
-        position={[SIDE_WALL_X - 0.5, 3.1, 0]}
-        rotation={[0, -Math.PI / 2, 0]}
-        fontSize={0.5}
-        color="#f59e0b"
-        anchorX="center"
-        anchorY="middle"
-      >
-        AISLE 3
+        ENTRANCE
       </Text>
     </>
   )

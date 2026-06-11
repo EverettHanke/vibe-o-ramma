@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useInputGetter } from '@/platform/input'
+import { PLAYER_SPAWN } from '@/game/store/layout'
 import { usePlannerOpen } from '@/state/uiStore'
 import { useCharacter } from './CharacterContext'
 
@@ -66,7 +67,7 @@ export function CharacterController() {
   return (
     <Ecctrl
       ref={ecctrlRef}
-      position={[0, 2, 6]}
+      position={PLAYER_SPAWN}
       mode="CameraBasedMovement"
       disableControl={plannerOpen}
       autoBalance={false}
