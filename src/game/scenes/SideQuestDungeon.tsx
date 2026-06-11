@@ -48,7 +48,7 @@ function Torch({
 }) {
   const { completedCount } = useQuests()
   const brightened = completedCount > index
-  const intensity = brightened ? 2.2 : 1.2
+  const intensity = brightened ? 3.2 : 2.2
 
   return (
     <group position={position}>
@@ -61,14 +61,15 @@ function Torch({
         <meshStandardMaterial
           color="#f97316"
           emissive="#ea580c"
-          emissiveIntensity={brightened ? 1.4 : 0.8}
+          emissiveIntensity={brightened ? 1.8 : 1.2}
         />
       </mesh>
       <pointLight
         position={[0, 0.35, 0.15]}
         intensity={intensity}
         color="#fbbf24"
-        distance={6}
+        distance={10}
+        decay={2}
         castShadow
       />
     </group>
